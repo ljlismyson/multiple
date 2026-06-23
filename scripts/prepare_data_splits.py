@@ -55,8 +55,8 @@ def _split_member(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Create 8:1:1 train/val/test bin splits.")
-    parser.add_argument("--zip", default="D:/edge_download/0623_multiples.zip", help="Path to 0623_multiples.zip.")
-    parser.add_argument("--out-dir", default="data", help="Output directory that will contain train/val/test.")
+    parser.add_argument("--zip", default="/data/bhy/0623_multiples.zip", help="Path to 0623_multiples.zip.")
+    parser.add_argument("--out-dir", default="/data/bhy/multiple/data", help="Output directory that will contain train/val/test.")
     parser.add_argument("--ns", type=int, default=880)
     parser.add_argument("--ng", type=int, default=481)
     parser.add_argument("--nt", type=int, default=3300)

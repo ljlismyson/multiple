@@ -34,7 +34,7 @@ conda run -n segy python scripts/check_data_shape.py --zip D:/edge_download/0623
 Linux example:
 
 ```bash
-python scripts/check_data_shape.py --zip /path/to/0623_multiples.zip
+python scripts/check_data_shape.py --zip /data/bhy/0623_multiples.zip
 ```
 
 ## Create Train/Val/Test Splits
@@ -42,7 +42,13 @@ python scripts/check_data_shape.py --zip /path/to/0623_multiples.zip
 Create the three split folders directly under `data/`:
 
 ```powershell
-conda run -n segy python scripts/prepare_data_splits.py --zip D:/edge_download/0623_multiples.zip --out-dir data
+conda run -n segy python scripts/prepare_data_splits.py
+```
+
+Linux example:
+
+```bash
+python scripts/prepare_data_splits.py
 ```
 
 This writes:
