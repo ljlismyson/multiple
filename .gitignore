@@ -1,0 +1,58 @@
+# Large local datasets
+data/
+*.bin
+*.sgy
+*.segy
+*.npy
+*.npz
+*.mat
+*.zip
+*.tar
+*.tar.gz
+
+# Training outputs
+results/
+outputs/
+checkpoints/
+runs/
+wandb/
+logs/
+*.pt
+*.pth
+*.ckpt
+
+# Smoke / temporary files
+smoke_tmp/
+tmp/
+temp/
+*.tmp
+
+# Local Codex / agent metadata
+.agents/
+.codex/
+
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Environments
+.venv/
+venv/
+env/
+ENV/
+.conda/
+
+# OS / editor files
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
+# Logs
+*.log
