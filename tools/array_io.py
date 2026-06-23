@@ -4,9 +4,13 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
+import re
 import zipfile
 
 import numpy as np
+
+
+_BIN_SHAPE_RE = re.compile(r"_ns(?P<ns>\d+)ng(?P<ng>\d+)nt(?P<nt>\d+)\.bin$")
 
 
 def read_npy_volume(path: Union[str, Path]) -> np.ndarray:
@@ -81,6 +85,16 @@ def read_bin_volume(
     return arr.astype(np.float32, copy=False)
 
 
+def _infer_bin_shape(path: Union[str, Path]) -> tuple[int, int, int]:
+    match = _BIN_SHAPE_RE.search(Path(path).name)
+    if match is None:
+        raise ValueError(
+            f"Cannot infer raw .bin shape from {path!r}. "
+            "Set shape: [n_shots, n_traces, n_time] in the config."
+        )
+    return int(match["ns"]), int(match["ng"]), int(match["nt"])
+
+
 def _resolve_archived_member(data_cfg: Dict[str, Any]) -> Optional[Path]:
     """Extract a configured zip member when ``path`` is missing."""
     path = Path(str(data_cfg["path"]))
@@ -148,11 +162,14 @@ def load_volume(data_cfg: Dict[str, Any]) -> np.ndarray:
     elif suffix == ".bin":
         shape = data_cfg.get("shape")
         if shape is None:
-            shape = (
-                int(data_cfg["n_shots"]),
-                int(data_cfg["n_traces"]),
-                int(data_cfg["n_time"]),
-            )
+            if all(k in data_cfg for k in ("n_shots", "n_traces", "n_time")):
+                shape = (
+                    int(data_cfg["n_shots"]),
+                    int(data_cfg["n_traces"]),
+                    int(data_cfg["n_time"]),
+                )
+            else:
+                shape = _infer_bin_shape(path)
         return read_bin_volume(
             path,
             shape=tuple(int(v) for v in shape),
