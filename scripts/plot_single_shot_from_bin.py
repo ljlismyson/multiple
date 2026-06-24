@@ -52,6 +52,13 @@ def main() -> None:
         help="Output PNG path. Defaults to <pred-bin-dir>/plots/shot_<shot>_comparison.png.",
     )
     parser.add_argument("--clip-percentile", type=float, default=99.0)
+    parser.add_argument("--vmin", type=float, default=None, help="Manual color scale minimum.")
+    parser.add_argument(
+        "--vmax",
+        type=float,
+        default=None,
+        help="Manual color scale maximum. If only --vmax is set, vmin=-vmax.",
+    )
     parser.add_argument("--dpi", type=int, default=300)
     args = parser.parse_args()
 
@@ -68,7 +75,16 @@ def main() -> None:
     pred_shot = pred[args.shot]
     label_shot = label[args.shot]
     residual = pred_shot - label_shot
-    v = _clip_value(input_shot, pred_shot, label_shot, residual, percentile=args.clip_percentile)
+    if args.vmin is not None or args.vmax is not None:
+        if args.vmax is None:
+            raise ValueError("--vmax is required when --vmin is set.")
+        vmin = -float(args.vmax) if args.vmin is None else float(args.vmin)
+        vmax = float(args.vmax)
+        if vmin >= vmax:
+            raise ValueError(f"Expected vmin < vmax, got vmin={vmin}, vmax={vmax}.")
+    else:
+        v = _clip_value(input_shot, pred_shot, label_shot, residual, percentile=args.clip_percentile)
+        vmin, vmax = -v, v
 
     import matplotlib.pyplot as plt
 
@@ -80,7 +96,7 @@ def main() -> None:
     ]
     fig, axes = plt.subplots(1, 4, figsize=(16, 5), sharey=True)
     for ax, (title, arr) in zip(axes, panels):
-        im = ax.imshow(arr.T, cmap="seismic", vmin=-v, vmax=v, aspect="auto")
+        im = ax.imshow(arr.T, cmap="seismic", vmin=vmin, vmax=vmax, aspect="auto")
         ax.set_title(title)
         ax.set_xlabel("trace")
         ax.set_ylabel("time sample")
