@@ -109,3 +109,15 @@ train:
 log:
   log_dir: logs
   plot_interval: 5
+
+inference:
+  split: test
+  checkpoint: null
+  output_dir: null
+  device: cuda
+  batch_size: 8
+  max_shots: null
+  n_viz_shots: 5
+  seed: 42
+  save_npy: false
+  save_bin: true

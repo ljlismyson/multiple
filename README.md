@@ -99,6 +99,26 @@ Multi-GPU Linux:
 torchrun --nproc_per_node=2 scripts/coherent_noise_attenuation/train_diffraction_multiples_atten_unet.py --config configs/coherent_noise_attenuation/diffraction_multiples_atten_unet.yaml
 ```
 
+## Inference
+
+After training, run inference on the held-out test split with a checkpoint:
+
+```bash
+python scripts/coherent_noise_attenuation/inference_diffraction_multiples_atten_unet.py \
+  --config configs/coherent_noise_attenuation/diffraction_multiples_atten_unet.yaml \
+  --checkpoint results/diffraction_multiples_atten_unet/checkpoints/epoch_0199.pt
+```
+
+The script defaults to `inference.split: test`, so the test set is only used
+here, not during training. Outputs are saved under:
+
+```text
+results/diffraction_multiples_atten_unet/inference_test
+```
+
+It writes per-shot metrics, a metrics summary JSON, random visualization PNGs,
+and a predicted raw float32 `.bin` volume.
+
 ## Train/Val/Test Split
 
 The split is a shot-level split saved as `.bin` files:
