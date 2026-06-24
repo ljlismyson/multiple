@@ -46,7 +46,11 @@ def main() -> None:
     parser.add_argument("--shot", type=int, default=0, help="0-based shot index to plot.")
     parser.add_argument("--shape", type=int, nargs=3, default=None, metavar=("NS", "NG", "NT"))
     parser.add_argument("--dtype", default="float32")
-    parser.add_argument("--out", default=None, help="Output PNG path.")
+    parser.add_argument(
+        "--out",
+        default=None,
+        help="Output PNG path. Defaults to <pred-bin-dir>/plots/shot_<shot>_comparison.png.",
+    )
     parser.add_argument("--clip-percentile", type=float, default=99.0)
     parser.add_argument("--dpi", type=int, default=300)
     args = parser.parse_args()
@@ -86,7 +90,7 @@ def main() -> None:
     fig.tight_layout()
 
     if args.out is None:
-        out = Path("outputs") / f"shot_{args.shot:04d}_comparison.png"
+        out = Path(args.pred_bin).resolve().parent / "plots" / f"shot_{args.shot:04d}_comparison.png"
     else:
         out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
