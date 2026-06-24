@@ -99,6 +99,45 @@ Multi-GPU Linux:
 torchrun --nproc_per_node=2 scripts/coherent_noise_attenuation/train_diffraction_multiples_atten_unet.py --config configs/coherent_noise_attenuation/diffraction_multiples_atten_unet.yaml
 ```
 
+## Position-Encoding Variants
+
+The original pipeline keeps a single seismic-amplitude input channel:
+
+```text
+[seismic]
+```
+
+Two optional position-encoding variants are provided as separate scripts and
+configs so the original model and the linear-position model remain unchanged.
+
+Linear absolute in-shot coordinates:
+
+```text
+[seismic, trace_position, time_position]
+```
+
+```bash
+python scripts/coherent_noise_attenuation/train_diffraction_multiples_atten_unet_posenc.py --config configs/coherent_noise_attenuation/diffraction_multiples_atten_unet_posenc.yaml
+python scripts/coherent_noise_attenuation/inference_diffraction_multiples_atten_unet_posenc.py --config configs/coherent_noise_attenuation/diffraction_multiples_atten_unet_posenc.yaml --checkpoint <checkpoint.pt>
+```
+
+This variant uses `model.params.in_channels: 3` and
+`preprocess.position_encoding_range: minus_one_to_one`.
+
+Sinusoidal absolute in-shot coordinates:
+
+```text
+[seismic, sin(trace), cos(trace), sin(time), cos(time)]
+```
+
+```bash
+python scripts/coherent_noise_attenuation/train_diffraction_multiples_atten_unet_sinposenc.py --config configs/coherent_noise_attenuation/diffraction_multiples_atten_unet_sinposenc.yaml
+python scripts/coherent_noise_attenuation/inference_diffraction_multiples_atten_unet_sinposenc.py --config configs/coherent_noise_attenuation/diffraction_multiples_atten_unet_sinposenc.yaml --checkpoint <checkpoint.pt>
+```
+
+This variant uses `model.params.in_channels: 5` and
+`preprocess.position_encoding_frequencies: [1.0]`.
+
 ## Inference
 
 After training, run inference on the held-out test split with a checkpoint:

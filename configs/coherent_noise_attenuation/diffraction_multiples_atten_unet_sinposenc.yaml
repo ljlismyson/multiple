@@ -1,0 +1,126 @@
+# Paired diffraction-multiple attenuation.
+# input_path/free_surface: data with diffraction multiples.
+# target_path/sim_abs_ghost: paired label volume.
+# Original data shape is (ns, ng, nt) = (880, 481, 3300).
+# Split by shot axis into train/val/test = 704/88/88.
+
+experiment:
+  name: diffraction_multiples_atten_unet_sinposenc
+  output_dir: outputs/260624v1
+  seed: 42
+  device: cuda
+
+data:
+  # null means all 704 training shots. If set, val shots are selected with
+  # the same 8:1 train:val ratio, rounded to an integer.
+  # Example: train_shots: 200 -> val_shots: 25.
+  train_shots: 200
+
+  train_pair:
+    input_path: data/train/free_surface_ns704ng481nt3300.bin
+    target_path: data/train/sim_abs_ghost_ns704ng481nt3300.bin
+    shape: [704, 481, 3300]
+    dtype: float32
+    order: C
+    mmap: false
+
+  val_pair:
+    input_path: data/val/free_surface_ns88ng481nt3300.bin
+    target_path: data/val/sim_abs_ghost_ns88ng481nt3300.bin
+    shape: [88, 481, 3300]
+    dtype: float32
+    order: C
+    mmap: false
+
+  test_pair:
+    input_path: data/test/free_surface_ns88ng481nt3300.bin
+    target_path: data/test/sim_abs_ghost_ns88ng481nt3300.bin
+    shape: [88, 481, 3300]
+    dtype: float32
+    order: C
+    mmap: false
+    note: "Held out for final testing only; the training script does not load this split."
+
+  loader:
+    batch_size: 144
+    num_workers: 0
+    pin_memory: true
+
+preprocess:
+  dt: 0.002
+  t0: 0.0
+  # Spherical-divergence compensation is not applied in the denoise training script (raw amplitudes).
+  normalize_mode: max_abs
+  normalize_scope: global
+  # clip_percentile: null
+  patch_time: 256
+  patch_trace: 128
+  patch_overlap: 0.5
+  # Sinusoidal absolute in-shot coordinates appended as input channels:
+  # [seismic, sin(trace), cos(trace), sin(time), cos(time)] for each frequency.
+  position_encoding_frequencies: [1.0]
+  max_shots: null
+
+model:
+  type: atten_unet
+  params:
+    in_channels: 5
+    out_channels: 1
+    base_channels: 32
+    depth: 4
+
+loss:
+  type: mse
+  params:
+    reduction: mean
+
+metrics:
+  - name: snr
+    params: { reduction: per_sample }
+  - name: psnr
+    params: { data_range: 1.0, reduction: per_sample }
+  - name: ssim
+    params: { data_range: 2.0, window_size: 11, sigma: 1.5 }
+  - name: mae
+    params: {}
+  - name: mse
+    params: {}
+  - name: rmse
+    params: { reduction: per_sample }
+
+optim:
+  type: adamw
+  params:
+    lr: 1.0e-3
+    weight_decay: 1.0e-4
+
+scheduler:
+  type: cosine
+  params:
+    min_lr: 1.0e-6
+
+train:
+  epochs: 200
+  grad_clip: 1.0
+  log_step: false
+  log_interval: 10
+  eval_interval: 1
+  ckpt_interval: 20
+  vis_interval: 5
+  resume: null
+
+log:
+  log_dir: logs
+  plot_interval: 5
+
+inference:
+  split: test
+  checkpoint: null
+  output_dir: null
+  device: cuda
+  batch_size: 8
+  max_shots: null
+  n_viz_shots: 5
+  seed: 42
+  save_npy: false
+  save_bin: true
