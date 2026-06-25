@@ -34,7 +34,7 @@ if str(_REPO_ROOT) not in sys.path:
 from model.coherent_noise_attenuation import build_model  # noqa: E402
 from tools.array_io import load_volume  # noqa: E402
 from tools.patching import patchify_uniform, unpatchify_uniform  # noqa: E402
-from tools.position_encoding import append_linear_position_channels  # noqa: E402
+from tools.position_encoding import append_configured_position_channels  # noqa: E402
 from tools.preprocessing import denormalize, normalize  # noqa: E402
 from utils import count_parameters, load_checkpoint, load_config  # noqa: E402
 from utils.inference_utils import (  # noqa: E402
@@ -43,6 +43,9 @@ from utils.inference_utils import (  # noqa: E402
     select_random_shots,
 )
 from utils.metrics import format_metric_value  # noqa: E402
+
+
+_DEFAULT_CONFIG = "configs/coherent_noise_attenuation/diffraction_multiples_atten_unet_posenc.yaml"
 
 
 def parse_args() -> argparse.Namespace:
@@ -55,7 +58,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--config",
         type=str,
-        default="configs/coherent_noise_attenuation/diffraction_multiples_atten_unet_posenc.yaml",
+        default=_DEFAULT_CONFIG,
         help="Path to the training/inference config.",
     )
     parser.add_argument("--checkpoint", type=str, default=None, help="Path to checkpoint .pt.")
@@ -103,13 +106,15 @@ def _inference_on_shots_posenc(
     device: torch.device,
     batch_size: int,
     position_encoding_range: str,
+    position_encoding_channels: str,
 ) -> np.ndarray:
     patches, info = patchify_uniform(
         input_shots, patch_size=patch_size, overlap=overlap, output_ndim=4
     )
-    patches = append_linear_position_channels(
+    patches = append_configured_position_channels(
         patches,
         info,
+        channels=position_encoding_channels,  # type: ignore[arg-type]
         value_range=position_encoding_range,  # type: ignore[arg-type]
     )
     ds = TensorDataset(torch.from_numpy(patches.astype(np.float32, copy=False)))
@@ -182,7 +187,7 @@ def main() -> None:
     overlap = float(prep.get("patch_overlap", 0.5))
 
     start = time.time()
-    pred_norm = _inference_on_shots_posenc(
+    residual_norm = _inference_on_shots_posenc(
         model=model,
         input_shots=input_norm,
         patch_size=(patch_trace, patch_time),
@@ -190,7 +195,9 @@ def main() -> None:
         device=device,
         batch_size=batch_size,
         position_encoding_range=str(prep.get("position_encoding_range", "minus_one_to_one")),
+        position_encoding_channels=str(prep.get("position_encoding_channels", "trace_time")),
     )
+    pred_norm = input_norm - residual_norm
     elapsed = time.time() - start
     print(f"Inference time: {elapsed:.2f}s")
 

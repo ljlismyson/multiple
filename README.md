@@ -138,6 +138,24 @@ python scripts/coherent_noise_attenuation/inference_diffraction_multiples_atten_
 This variant uses `model.params.in_channels: 5` and
 `preprocess.position_encoding_frequencies: [1.0]`.
 
+## Per-Trace U-Net With Inter-Trace Attention
+
+This variant treats each trace as a 1D input sequence. A shared 1D U-Net
+processes every trace independently, then multi-head self-attention mixes
+bottleneck features along the trace direction. Its input channels are:
+
+```text
+[seismic, trace_position]
+```
+
+Only the absolute trace coordinate is appended. The time axis is already the
+single-trace U-Net's convolution axis, while trace attention benefits from
+knowing each trace's absolute lateral position inside the shot gather.
+
+```bash
+conda run -n segy python scripts/coherent_noise_attenuation/train_diffraction_multiples_trace_attention_unet.py --config configs/coherent_noise_attenuation/diffraction_multiples_trace_attention_unet.yaml
+```
+
 ## Inference
 
 After training, run inference on the held-out test split with a checkpoint:

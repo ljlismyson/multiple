@@ -474,8 +474,9 @@ def evaluate(
 
         if metrics:
             if metrics_on_denoised_signal:
-                pred_m = x - pred
-                targ_m = x - y
+                x_signal = x[:, : pred.shape[1], ...]
+                pred_m = x_signal - pred
+                targ_m = x_signal - y
             else:
                 pred_m, targ_m = pred, y
             batch_metrics = compute_metrics(metrics, pred_m, targ_m)

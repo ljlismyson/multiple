@@ -165,7 +165,8 @@ def _build_denoise_patch_pairs_from_pair(
     input_patches, _ = patchify_uniform(
         input_shots, patch_size=(patch_x, patch_t), overlap=overlap, output_ndim=4
     )
-    return input_patches.astype(np.float32), target_patches.astype(np.float32)
+    residual_patches = input_patches - target_patches
+    return input_patches.astype(np.float32), residual_patches.astype(np.float32)
 
 
 def _configured_ns(pair_cfg: Dict[str, Any]) -> Optional[int]:
@@ -378,7 +379,7 @@ def main() -> None:
                 loss_fn=loss_fn,
                 metrics=metrics,
                 device=device,
-                metrics_on_denoised_signal=False,
+                metrics_on_denoised_signal=True,
             )
             if (epoch + 1) % eval_interval == 0:
                 val_losses, val_metrics = evaluate(
@@ -387,7 +388,7 @@ def main() -> None:
                     loss_fn=loss_fn,
                     metrics=metrics,
                     device=device,
-                    metrics_on_denoised_signal=False,
+                    metrics_on_denoised_signal=True,
                 )
 
         metric_row: Dict[str, float] = {}

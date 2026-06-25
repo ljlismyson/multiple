@@ -45,7 +45,7 @@ if str(_REPO_ROOT) not in sys.path:
 from model.coherent_noise_attenuation import build_model  # noqa: E402
 from tools.array_io import load_volume  # noqa: E402
 from tools.patching import patchify_uniform  # noqa: E402
-from tools.position_encoding import append_linear_position_channels  # noqa: E402
+from tools.position_encoding import append_configured_position_channels  # noqa: E402
 from tools.preprocessing import normalize  # noqa: E402
 from utils import (  # noqa: E402
     TrainingLogger,
@@ -165,16 +165,19 @@ def _build_denoise_patch_pairs_from_pair(
     target_patches, _ = patchify_uniform(
         target_shots, patch_size=(patch_x, patch_t), overlap=overlap, output_ndim=4
     )
-    input_patches, input_info = patchify_uniform(
+    seismic_patches, input_info = patchify_uniform(
         input_shots, patch_size=(patch_x, patch_t), overlap=overlap, output_ndim=4
     )
+    residual_patches = seismic_patches - target_patches
     pos_range = str(prep.get("position_encoding_range", "minus_one_to_one"))
-    input_patches = append_linear_position_channels(
-        input_patches,
+    pos_channels = str(prep.get("position_encoding_channels", "trace_time"))
+    input_patches = append_configured_position_channels(
+        seismic_patches,
         input_info,
+        channels=pos_channels,  # type: ignore[arg-type]
         value_range=pos_range,  # type: ignore[arg-type]
     )
-    return input_patches.astype(np.float32), target_patches.astype(np.float32)
+    return input_patches.astype(np.float32), residual_patches.astype(np.float32)
 
 
 def _configured_ns(pair_cfg: Dict[str, Any]) -> Optional[int]:
@@ -387,7 +390,7 @@ def main() -> None:
                 loss_fn=loss_fn,
                 metrics=metrics,
                 device=device,
-                metrics_on_denoised_signal=False,
+                metrics_on_denoised_signal=True,
             )
             if (epoch + 1) % eval_interval == 0:
                 val_losses, val_metrics = evaluate(
@@ -396,7 +399,7 @@ def main() -> None:
                     loss_fn=loss_fn,
                     metrics=metrics,
                     device=device,
-                    metrics_on_denoised_signal=False,
+                    metrics_on_denoised_signal=True,
                 )
 
         metric_row: Dict[str, float] = {}

@@ -143,7 +143,7 @@ def main() -> None:
     overlap = float(prep.get("patch_overlap", 0.5))
 
     start = time.time()
-    pred_norm = inference_on_shots(
+    residual_norm = inference_on_shots(
         model=model,
         input_shots=input_norm,
         patch_size=(patch_trace, patch_time),
@@ -151,6 +151,7 @@ def main() -> None:
         device=device,
         batch_size=batch_size,
     )
+    pred_norm = input_norm - residual_norm
     elapsed = time.time() - start
     print(f"Inference time: {elapsed:.2f}s")
 
