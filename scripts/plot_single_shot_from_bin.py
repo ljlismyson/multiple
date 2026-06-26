@@ -41,7 +41,7 @@ def _clip_value(*arrays: np.ndarray, percentile: float) -> float:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Plot one shot from input/prediction/label bin files.")
     parser.add_argument("--input-bin", default="/data/bhy/multiple/data/test/free_surface_ns88ng481nt3300.bin", help="Noisy/input free-surface bin.")
-    parser.add_argument("--pred-bin", default="/data/bhy/multiple/outputs/260624v1/diffraction_multiples_atten_unet/inference_test/pred_test_ns88ng481nt3300.bin", help="Denoised/predicted bin.")
+    parser.add_argument("--pred-bin", default="/data/bhy/multiple/outputs/260626v1/diffraction_multiples_atten_unet/inference_test/pred_test_ns88ng481nt3300.bin", help="Denoised/predicted bin.")
     parser.add_argument("--label-bin", default="/data/bhy/multiple/data/test/sim_abs_ghost_ns88ng481nt3300.bin", help="Clean label bin.")
     parser.add_argument("--shot", type=int, default=0, help="0-based shot index to plot.")
     parser.add_argument("--shape", type=int, nargs=3, default=None, metavar=("NS", "NG", "NT"))
