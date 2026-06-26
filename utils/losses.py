@@ -75,6 +75,34 @@ class L1Loss(BaseLoss):
         return nn.functional.l1_loss(pred, target, reduction=self.reduction)
 
 
+@register_loss("mse_l1")
+class MSEL1Loss(BaseLoss):
+    """Weighted MSE + L1 loss for residual prediction."""
+
+    def __init__(
+        self,
+        mse_weight: float = 0.3,
+        l1_weight: float = 0.7,
+        reduction: str = "mean",
+    ) -> None:
+        super().__init__()
+        self.mse_weight = float(mse_weight)
+        self.l1_weight = float(l1_weight)
+        self.reduction = reduction
+
+    def forward(
+        self,
+        pred: torch.Tensor,
+        target: Optional[torch.Tensor] = None,
+        **extras: Any,
+    ) -> torch.Tensor:
+        if target is None:
+            raise ValueError("MSEL1Loss requires `target`.")
+        mse = nn.functional.mse_loss(pred, target, reduction=self.reduction)
+        l1 = nn.functional.l1_loss(pred, target, reduction=self.reduction)
+        return self.mse_weight * mse + self.l1_weight * l1
+
+
 @register_loss("weighted_mse")
 class WeightedMSELoss(BaseLoss):
     """MSE weighted by ``extras["weight"]``."""
