@@ -3,7 +3,7 @@
 
 experiment:
   name: diffraction_multiples_atten_unet_posenc_mse_l1
-  output_dir: outputs/260626v2_mse_l1
+  output_dir: outputs/260626v2_mse_l1_v2
   seed: 42
   device: cuda
 
@@ -98,7 +98,7 @@ train:
   log_interval: 10
   eval_interval: 1
   ckpt_interval: 20
-  vis_interval: 5
+  vis_interval: 9999
   resume: null
 
 log:
