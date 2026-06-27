@@ -9,6 +9,7 @@ from typing import Any, Callable, Dict, Optional, Type
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 LOSS_REGISTRY: Dict[str, Type["BaseLoss"]] = {}
 
@@ -101,6 +102,82 @@ class MSEL1Loss(BaseLoss):
         mse = nn.functional.mse_loss(pred, target, reduction=self.reduction)
         l1 = nn.functional.l1_loss(pred, target, reduction=self.reduction)
         return self.mse_weight * mse + self.l1_weight * l1
+
+
+@register_loss("residual_signal_detail")
+class ResidualSignalDetailLoss(BaseLoss):
+    """Residual supervision plus denoised-signal detail preservation."""
+
+    def __init__(
+        self,
+        residual_l1_weight: float = 0.35,
+        signal_l1_weight: float = 0.35,
+        gradient_weight: float = 0.20,
+        highfreq_weight: float = 0.10,
+        highfreq_kernel_size: int = 5,
+        reduction: str = "mean",
+    ) -> None:
+        super().__init__()
+        if reduction != "mean":
+            raise ValueError("ResidualSignalDetailLoss currently supports reduction='mean' only.")
+        if highfreq_kernel_size < 3 or highfreq_kernel_size % 2 == 0:
+            raise ValueError("highfreq_kernel_size must be an odd integer >= 3.")
+        self.residual_l1_weight = float(residual_l1_weight)
+        self.signal_l1_weight = float(signal_l1_weight)
+        self.gradient_weight = float(gradient_weight)
+        self.highfreq_weight = float(highfreq_weight)
+        self.highfreq_kernel_size = int(highfreq_kernel_size)
+        self.reduction = reduction
+
+    @staticmethod
+    def _gradient_l1(pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        pred_dx = pred[..., 1:, :] - pred[..., :-1, :]
+        target_dx = target[..., 1:, :] - target[..., :-1, :]
+        pred_dt = pred[..., :, 1:] - pred[..., :, :-1]
+        target_dt = target[..., :, 1:] - target[..., :, :-1]
+        return F.l1_loss(pred_dx, target_dx) + F.l1_loss(pred_dt, target_dt)
+
+    def _highfreq(self, x: torch.Tensor) -> torch.Tensor:
+        pad = self.highfreq_kernel_size // 2
+        smooth = F.avg_pool2d(
+            x,
+            kernel_size=self.highfreq_kernel_size,
+            stride=1,
+            padding=pad,
+            count_include_pad=False,
+        )
+        return x - smooth
+
+    def forward(
+        self,
+        pred: torch.Tensor,
+        target: Optional[torch.Tensor] = None,
+        **extras: Any,
+    ) -> torch.Tensor:
+        if target is None:
+            raise ValueError("ResidualSignalDetailLoss requires `target`.")
+        input_tensor = extras.get("input")
+        if input_tensor is None:
+            raise ValueError("ResidualSignalDetailLoss requires extras['input'].")
+        if not isinstance(input_tensor, torch.Tensor):
+            input_tensor = torch.as_tensor(input_tensor, device=pred.device, dtype=pred.dtype)
+        input_tensor = input_tensor.to(device=pred.device, dtype=pred.dtype)
+        seismic_input = input_tensor[:, : pred.shape[1], ...]
+
+        denoised_pred = seismic_input - pred
+        clean_target = seismic_input - target
+
+        residual_l1 = F.l1_loss(pred, target)
+        signal_l1 = F.l1_loss(denoised_pred, clean_target)
+        gradient_l1 = self._gradient_l1(denoised_pred, clean_target)
+        highfreq_l1 = F.l1_loss(self._highfreq(denoised_pred), self._highfreq(clean_target))
+
+        return (
+            self.residual_l1_weight * residual_l1
+            + self.signal_l1_weight * signal_l1
+            + self.gradient_weight * gradient_l1
+            + self.highfreq_weight * highfreq_l1
+        )
 
 
 @register_loss("weighted_mse")
