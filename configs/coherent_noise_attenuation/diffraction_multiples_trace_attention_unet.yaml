@@ -4,7 +4,7 @@
 
 experiment:
   name: diffraction_multiples_trace_attention_unet
-  output_dir: outputs/260624v2
+  output_dir: outputs/260628_trace_v2
   seed: 42
   device: cuda
 
@@ -39,7 +39,7 @@ data:
     note: "Held out for final testing only; the training script does not load this split."
 
   loader:
-    batch_size: 144
+    batch_size: 4
     num_workers: 0
     pin_memory: true
 
@@ -48,7 +48,7 @@ preprocess:
   t0: 0.0
   normalize_mode: max_abs
   normalize_scope: global
-  patch_time: 256
+  patch_time: 3300
   patch_trace: 128
   patch_overlap: 0.5
   # Only trace coordinate is appended: [seismic, trace_position].
@@ -99,13 +99,13 @@ scheduler:
     min_lr: 1.0e-6
 
 train:
-  epochs: 200
+  epochs: 400
   grad_clip: 1.0
   log_step: false
   log_interval: 10
   eval_interval: 1
   ckpt_interval: 20
-  vis_interval: 5
+  vis_interval: 9999
   resume: null
 
 log:
@@ -117,9 +117,9 @@ inference:
   checkpoint: null
   output_dir: null
   device: cuda
-  batch_size: 8
+  batch_size: 4
   max_shots: null
-  n_viz_shots: 5
+  n_viz_shots: 9999
   seed: 42
   save_npy: false
   save_bin: true
