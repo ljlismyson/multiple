@@ -7,6 +7,7 @@ Importing this sub-package executes every concrete model file so their
 
 from ..registry import MODEL_REGISTRY, build_model, register_model
 
+from . import atten_res_unet  # noqa: F401
 from . import atten_unet  # noqa: F401
 from . import dncnn  # noqa: F401
 from . import res_unet  # noqa: F401
