@@ -79,7 +79,6 @@ def main() -> None:
     parser.add_argument("--input-bin", default="data/test/free_surface_ns88ng481nt3300.bin", help="Noisy/input free-surface bin.")
     parser.add_argument("--pred-bin", required=True, help="Denoised/predicted bin.")
     parser.add_argument("--label-bin", default="data/test/sim_abs_ghost_ns88ng481nt3300.bin", help="Clean label bin.")
-    parser.add_argument("--no-label", action="store_true", help="Do not read or plot label, even if --label-bin is set.")
     parser.add_argument("--shot", type=int, default=0, help="0-based shot index to plot.")
     parser.add_argument("--shape", type=int, nargs=3, default=None, metavar=("NS", "NG", "NT"))
     parser.add_argument("--dtype", default="float32")
@@ -118,32 +117,29 @@ def main() -> None:
 
     noisy = _read_bin(args.input_bin, args.shape, args.dtype)
     pred = _read_bin(args.pred_bin, args.shape, args.dtype)
-    label = None if args.no_label else _read_bin(args.label_bin, args.shape, args.dtype)
-    if noisy.shape != pred.shape or (label is not None and noisy.shape != label.shape):
-        label_shape = None if label is None else label.shape
-        raise ValueError(f"Shape mismatch: input={noisy.shape}, pred={pred.shape}, label={label_shape}.")
+    label = _read_bin(args.label_bin, args.shape, args.dtype)
+    if noisy.shape != pred.shape or noisy.shape != label.shape:
+        raise ValueError(f"Shape mismatch: input={noisy.shape}, pred={pred.shape}, label={label.shape}.")
 
     if not 0 <= args.shot < noisy.shape[0]:
         raise IndexError(f"--shot must be in [0, {noisy.shape[0] - 1}], got {args.shot}.")
 
     input_shot = noisy[args.shot]
     pred_shot = pred[args.shot]
-    label_shot = None if label is None else label[args.shot]
+    label_shot = label[args.shot]
     residual = _build_residual(input_shot, pred_shot, label_shot, args.residual_mode)
 
     # --add-residual 关闭时仍画出候选面板，但保持为原始去噪结果，便于和打开开关的图对照。
     scale = float(args.residual_scale) if args.add_residual else 0.0
     adjusted = pred_shot + scale * residual
+    remaining_residual = adjusted - label_shot
 
     panels = [
-        ("before denoise", input_shot),
-        ("after denoise", pred_shot),
-        (f"addback scale={scale:g}", adjusted),
+        ("input", input_shot),
+        (f"pred + {scale:g} * residual", adjusted),
+        ("label", label_shot),
+        ("remaining residual", remaining_residual),
     ]
-    if label_shot is not None:
-        panels.append(("clean label", label_shot))
-    residual_title = "residual (pred - label)" if args.residual_mode == "pred-minus-label" else f"residual ({args.residual_mode})"
-    panels.append((residual_title, residual))
 
     vmin, vmax = _resolve_color_scale(args, panels)
 
