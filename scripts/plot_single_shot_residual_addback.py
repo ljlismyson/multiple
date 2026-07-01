@@ -78,7 +78,7 @@ def main() -> None:
     )
     parser.add_argument("--input-bin", default="data/test/free_surface_ns88ng481nt3300.bin", help="Noisy/input free-surface bin.")
     parser.add_argument("--pred-bin", required=True, help="Denoised/predicted bin.")
-    parser.add_argument("--label-bin", default="data/test/sim_abs_ghost_ns88ng481nt3300.bin", help="Optional clean label bin.")
+    parser.add_argument("--label-bin", default="data/test/sim_abs_ghost_ns88ng481nt3300.bin", help="Clean label bin.")
     parser.add_argument("--no-label", action="store_true", help="Do not read or plot label, even if --label-bin is set.")
     parser.add_argument("--shot", type=int, default=0, help="0-based shot index to plot.")
     parser.add_argument("--shape", type=int, nargs=3, default=None, metavar=("NS", "NG", "NT"))
@@ -97,8 +97,8 @@ def main() -> None:
     parser.add_argument(
         "--residual-mode",
         choices=("input-minus-pred", "pred-minus-label", "input-minus-label"),
-        default="input-minus-pred",
-        help="Residual definition used for add-back and residual panel.",
+        default="pred-minus-label",
+        help="Residual definition used for add-back and residual panel. Default matches plot_single_shot_from_bin.py.",
     )
     parser.add_argument(
         "--out",
@@ -142,7 +142,8 @@ def main() -> None:
     ]
     if label_shot is not None:
         panels.append(("clean label", label_shot))
-    panels.append((f"residual ({args.residual_mode})", residual))
+    residual_title = "residual (pred - label)" if args.residual_mode == "pred-minus-label" else f"residual ({args.residual_mode})"
+    panels.append((residual_title, residual))
 
     vmin, vmax = _resolve_color_scale(args, panels)
 
