@@ -1,4 +1,4 @@
-"""Plot one shot and optionally add a scaled residual back to the denoised result."""
+"""Plot one shot after moving prediction back along the pred-label residual."""
 
 from __future__ import annotations
 
@@ -85,13 +85,13 @@ def main() -> None:
     parser.add_argument(
         "--add-residual",
         action="store_true",
-        help="Plot pred + residual_scale * residual. Without this flag, adjusted panel equals pred.",
+        help="Plot pred - residual_scale * residual. Without this flag, adjusted panel equals pred.",
     )
     parser.add_argument(
         "--residual-scale",
         type=float,
         default=1.0,
-        help="Residual add-back ratio. Effective only with --add-residual.",
+        help="Residual correction ratio. With default residual=pred-label, scale=1 moves pred to label.",
     )
     parser.add_argument(
         "--residual-mode",
@@ -131,12 +131,12 @@ def main() -> None:
 
     # --add-residual 关闭时仍画出候选面板，但保持为原始去噪结果，便于和打开开关的图对照。
     scale = float(args.residual_scale) if args.add_residual else 0.0
-    adjusted = pred_shot + scale * residual
+    adjusted = pred_shot - scale * residual
     remaining_residual = adjusted - label_shot
 
     panels = [
         ("input", input_shot),
-        (f"pred + {scale:g} * residual", adjusted),
+        (f"pred - {scale:g} * residual", adjusted),
         ("label", label_shot),
         ("remaining residual", remaining_residual),
     ]
