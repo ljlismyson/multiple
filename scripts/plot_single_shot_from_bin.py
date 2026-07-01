@@ -129,14 +129,11 @@ def main() -> None:
         subplots_dir.mkdir(parents=True, exist_ok=True)
         for idx, (title, arr) in enumerate(panels, start=1):
             panel_fig, panel_ax = plt.subplots(1, 1, figsize=(5, 5))
-            im = panel_ax.imshow(arr.T, cmap="seismic", vmin=vmin, vmax=vmax, aspect="auto")
-            panel_ax.set_title(title)
-            panel_ax.set_xlabel("trace")
-            panel_ax.set_ylabel("time sample")
-            panel_fig.colorbar(im, ax=panel_ax, fraction=0.046, pad=0.04)
-            panel_fig.tight_layout()
+            panel_ax.imshow(arr.T, cmap="seismic", vmin=vmin, vmax=vmax, aspect="auto")
+            panel_ax.axis("off")
+            panel_fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
             panel_path = subplots_dir / f"{idx:02d}_{_slugify_title(title)}.png"
-            panel_fig.savefig(panel_path, dpi=args.dpi, bbox_inches="tight")
+            panel_fig.savefig(panel_path, dpi=args.dpi, bbox_inches="tight", pad_inches=0)
             plt.close(panel_fig)
             print(f"Saved subplot: {panel_path}")
 
