@@ -38,6 +38,11 @@ def _clip_value(*arrays: np.ndarray, percentile: float) -> float:
     return v if v > 0.0 else float(vals.max() or 1.0)
 
 
+def _slugify_title(title: str) -> str:
+    slug = re.sub(r"[^0-9A-Za-z]+", "_", title.strip()).strip("_").lower()
+    return slug or "panel"
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Plot one shot from input/prediction/label bin files.")
     parser.add_argument("--input-bin", default="/data/bhy/multiple/data/test/free_surface_ns88ng481nt3300.bin", help="Noisy/input free-surface bin.")
@@ -50,6 +55,11 @@ def main() -> None:
         "--out",
         default=None,
         help="Output PNG path. Defaults to <pred-bin-dir>/plots/shot_<shot>_comparison.png.",
+    )
+    parser.add_argument(
+        "--save-subplots",
+        action="store_true",
+        help="Also save each panel as a separate PNG using the same vmin/vmax as the combined figure.",
     )
     parser.add_argument("--clip-percentile", type=float, default=99.0)
     parser.add_argument("--vmin", type=float, default=None, help="Manual color scale minimum.")
@@ -113,6 +123,22 @@ def main() -> None:
     fig.savefig(out, dpi=args.dpi, bbox_inches="tight")
     plt.close(fig)
     print(f"Saved: {out}")
+
+    if args.save_subplots:
+        subplots_dir = out.parent / f"{out.stem}_subplots"
+        subplots_dir.mkdir(parents=True, exist_ok=True)
+        for idx, (title, arr) in enumerate(panels, start=1):
+            panel_fig, panel_ax = plt.subplots(1, 1, figsize=(5, 5))
+            im = panel_ax.imshow(arr.T, cmap="seismic", vmin=vmin, vmax=vmax, aspect="auto")
+            panel_ax.set_title(title)
+            panel_ax.set_xlabel("trace")
+            panel_ax.set_ylabel("time sample")
+            panel_fig.colorbar(im, ax=panel_ax, fraction=0.046, pad=0.04)
+            panel_fig.tight_layout()
+            panel_path = subplots_dir / f"{idx:02d}_{_slugify_title(title)}.png"
+            panel_fig.savefig(panel_path, dpi=args.dpi, bbox_inches="tight")
+            plt.close(panel_fig)
+            print(f"Saved subplot: {panel_path}")
 
 
 if __name__ == "__main__":
